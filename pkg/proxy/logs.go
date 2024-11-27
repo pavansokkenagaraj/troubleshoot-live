@@ -27,10 +27,16 @@ func LogsHandler(b bundle.Bundle, l *slog.Logger) http.HandlerFunc {
 
 		container := r.URL.Query().Get("container")
 		previous := r.URL.Query().Get("previous")
+		pod := vars["pod"]
+		namespace := vars["namespace"]
+
+		container := r.URL.Query().Get("container")
+		previous := r.URL.Query().Get("previous")
 
 		// Search for pod logs path in the bundle which could be collected either by the
 		// pod logs collector or by the cluster resources collector, which collects pod logs
 		// for failing pods.
+		filename := fmt.Sprintf("%s-%s.log", pod, container)
 		filename := fmt.Sprintf("%s-%s.log", pod, container)
 		candidatePaths := []string{
 			filepath.Join(b.Layout().PodLogs(), namespace, filename),
