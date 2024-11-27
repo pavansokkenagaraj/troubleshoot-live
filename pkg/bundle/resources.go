@@ -23,8 +23,6 @@ import (
 // GVK information. It is up to caller to add GVK to each item before further
 // processing.
 func LoadResourcesFromFile(bundle afero.Fs, path string) (*unstructured.UnstructuredList, error) {
-	list := &unstructured.UnstructuredList{}
-
 	data, err := afero.ReadFile(bundle, path)
 	if err != nil {
 		return nil, err
@@ -35,9 +33,16 @@ func LoadResourcesFromFile(bundle afero.Fs, path string) (*unstructured.Unstruct
 	}
 
 	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
+		list := &unstructured.UnstructuredList{}
+		err := yaml.Unmarshal(data, list)
+		if err == nil {
+			return list, nil
+		}
+
 		items := []unstructured.Unstructured{}
-		if err := yaml.Unmarshal(data, &items); err != nil {
-			return nil, err
+		if iErr := yaml.Unmarshal(data, &items); err != nil {
+			errs := []error{err, iErr}
+			return nil, fmt.Errorf("failed to load resources from YAML file %q with errors: %w", path, errors.Join(errs...))
 		}
 		list.Items = items
 		return list, nil
@@ -113,8 +118,14 @@ func LoadConfigMap(bundle afero.Fs, path string) (*unstructured.Unstructured, er
 	}
 
 	cmStruct := cmOrSecret{}
-	if err := json.Unmarshal(data, &cmStruct); err != nil {
-		return nil, err
+	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
+		if err := yaml.Unmarshal(data, &cmStruct); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := json.Unmarshal(data, &cmStruct); err != nil {
+			return nil, err
+		}
 	}
 
 	cm := &corev1.ConfigMap{
@@ -141,8 +152,14 @@ func LoadSecret(bundle afero.Fs, path string) (*unstructured.Unstructured, error
 	}
 
 	secretData := cmOrSecret{}
-	if err := json.Unmarshal(data, &secretData); err != nil {
-		return nil, err
+	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
+		if err := yaml.Unmarshal(data, &secretData); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := json.Unmarshal(data, &secretData); err != nil {
+			return nil, err
+		}
 	}
 
 	cm := &corev1.Secret{

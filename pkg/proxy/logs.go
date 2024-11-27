@@ -20,16 +20,56 @@ func LogsHandler(b bundle.Bundle, l *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 
-		podLogsPath := ""
+		pod := vars["pod"]
+		namespace := vars["namespace"]
+
+		container := r.URL.Query().Get("container")
+		previous := r.URL.Query().Get("previous")
 
 		// Search for pod logs path in the bundle which could be collected either by the
 		// pod logs collector or by the cluster resources collector, which collects pod logs
 		// for failing pods.
-		filename := fmt.Sprintf("%s-%s.log", vars["pod"], r.URL.Query().Get("container"))
+		filename := fmt.Sprintf("%s-%s.log", pod, container)
 		candidatePaths := []string{
-			filepath.Join(b.Layout().PodLogs(), vars["namespace"], filename),
-			filepath.Join(b.Layout().ClusterResources(), "pods/logs", vars["namespace"], vars["pod"], r.URL.Query().Get("container")+".log"),
+			filepath.Join(b.Layout().PodLogs(), namespace, filename),
+			filepath.Join(b.Layout().ClusterResources(), "pods/logs", namespace, pod, container+".log"),
 		}
+
+		podFilePath := filepath.Join(b.Layout().ClusterResources(), "pods", namespace+".yaml")
+		list, err := bundle.LoadResourcesFromFile(b, podFilePath)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to load pod %s from path %s: %v", pod, podFilePath, err), http.StatusInternalServerError)
+			return
+		}
+
+		var podUID string
+		// annotation for the pod logs path is stored in the pod resource[kubernetes.io/config.hash] for etcd/api-server/controller-manager
+		var configHash string
+		for _, item := range list.Items {
+			if item.GetName() == pod {
+				podUID = string(item.GetUID())
+
+				if item.GetAnnotations()["kubernetes.io/config.hash"] != "" {
+					configHash = item.GetAnnotations()["kubernetes.io/config.hash"]
+				}
+				break
+			}
+		}
+
+		logFile := "0.log"
+		if previous == "true" {
+			logFile = "1.log"
+		}
+
+		if podUID != "" {
+			candidatePaths = append(candidatePaths, filepath.Join(b.Layout().PodLogs(), fmt.Sprintf("%s_%s_%s", namespace, pod, podUID), container, logFile))
+		}
+
+		if configHash != "" {
+			candidatePaths = append(candidatePaths, filepath.Join(b.Layout().PodLogs(), fmt.Sprintf("%s_%s_%s", namespace, pod, configHash), container, logFile))
+		}
+
+		podLogsPath := ""
 		for _, candidatePath := range candidatePaths {
 			if exists, _ := afero.Exists(b, candidatePath); exists {
 				podLogsPath = candidatePath

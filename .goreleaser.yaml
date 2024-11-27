@@ -1,3 +1,5 @@
+version: 2
+
 project_name: troubleshoot-live
 
 changelog:
@@ -51,7 +53,7 @@ archives:
         format: zip
     builds:
       - cli
-    rlcp: true
+    # rlcp: true
 
 dockers:
   - image_templates:
@@ -102,4 +104,4 @@ docker_manifests:
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ incminor .Tag }}-dev"
+  version_template: "{{ incminor .Tag }}-dev"

@@ -88,7 +88,7 @@ func importNamespaces(
 	ctx context.Context,
 	cfg *importerConfig,
 ) error {
-	namespacesPath := filepath.Join(cfg.bundle.Layout().ClusterResources(), "namespaces.json")
+	namespacesPath := filepath.Join(cfg.bundle.Layout().ClusterResources(), "namespaces.yaml")
 	list, err := bundle.LoadResourcesFromFile(cfg.bundle, namespacesPath)
 	if err != nil {
 		cli.WarnOnErrorsFilePresence(cfg.bundle, cfg.out, namespacesPath)
@@ -129,6 +129,7 @@ func importClusterResources(
 	}
 
 	skipDirs := []string{
+		"apiservices",
 		"auth-cani-list",
 		"pod-disruption-budgets",
 	}
@@ -161,6 +162,7 @@ func importClusterResources(
 		if err != nil {
 			cli.WarnOnErrorsFilePresence(cfg.bundle, cfg.out, path)
 			cfg.out.Errorf(utils.MaxErrorString(err, 200), "Failed to load resources from file %q", path)
+			// TODO: FIX THIS Failed to load resources from file "k8s/cluster-resources/cluster-resources"    err="unsupported data format"
 			return nil
 		}
 

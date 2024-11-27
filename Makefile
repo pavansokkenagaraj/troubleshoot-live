@@ -24,17 +24,17 @@ endif
 
 .PHONY: build-snapshot
 build-snapshot:
-	goreleaser --debug=$(GORELEASER_DEBUG) \
+	goreleaser  \
 		build \
 		--snapshot \
 		--clean \
 		--parallelism=$(GORELEASER_PARALLELISM) \
 		$(if $(BUILD_ALL),,--single-target) \
-		--skip-post-hooks
+
 
 .PHONY: release
 release:
-	goreleaser --debug=$(GORELEASER_DEBUG) \
+	goreleaser  \
 		release \
 		--clean \
 		--parallelism=$(GORELEASER_PARALLELISM) \
@@ -43,7 +43,7 @@ release:
 
 .PHONY: release-snapshot
 release-snapshot:
-	goreleaser --debug=$(GORELEASER_DEBUG) \
+	goreleaser  \
 		release \
 		--snapshot \
 		--skip-publish \
