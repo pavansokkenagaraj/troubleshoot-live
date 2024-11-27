@@ -19,7 +19,7 @@ import (
 )
 
 func loadCRDs(b bundle.Bundle) (*unstructured.UnstructuredList, error) {
-	crdsPath := filepath.Join(b.Layout().ClusterResources(), "custom-resource-definitions.json")
+	crdsPath := filepath.Join(b.Layout().ClusterResources(), "crds.yaml")
 	list, err := bundle.LoadResourcesFromFile(b, crdsPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load CRDs: %w", err)
@@ -71,7 +71,7 @@ func importCRDs(
 	if err != nil {
 		cli.WarnOnErrorsFilePresence(
 			cfg.bundle, cfg.out,
-			filepath.Join(cfg.bundle.Layout().ClusterResources(), "custom-resource-definitions.json"),
+			filepath.Join(cfg.bundle.Layout().ClusterResources(), "crds.yaml"),
 		)
 		return err
 	}

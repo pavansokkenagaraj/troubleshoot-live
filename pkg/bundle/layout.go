@@ -12,21 +12,21 @@ type Layout interface {
 type defaultLayout struct{}
 
 func (defaultLayout) ClusterInfo() string {
-	return "cluster-info"
+	return "k8s/cluster-info"
 }
 
 func (defaultLayout) ClusterResources() string {
-	return "cluster-resources"
+	return "k8s/cluster-resources"
 }
 
 func (defaultLayout) PodLogs() string {
-	return "pod-logs"
+	return "k8s/pod-logs"
 }
 
 func (defaultLayout) ConfigMaps() string {
-	return "configmaps"
+	return "k8s/cluster-resources/configmaps"
 }
 
 func (defaultLayout) Secrets() string {
-	return "secrets"
+	return "k8s/cluster-resources/secrets"
 }

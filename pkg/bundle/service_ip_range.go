@@ -50,7 +50,7 @@ func DetectServiceNodePortRange(b Bundle) (string, error) {
 }
 
 func findKubeApiserverPod(b Bundle) (*corev1.Pod, error) {
-	path := filepath.Join(b.Layout().ClusterResources(), "pods", "kube-system.json")
+	path := filepath.Join(b.Layout().ClusterResources(), "pods", "kube-system.yaml")
 	list, err := LoadResourcesFromFile(b, path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load pods from file %q: %w", path, err)
