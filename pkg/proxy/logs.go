@@ -11,6 +11,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/spf13/afero"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/mhrabovcin/troubleshoot-live/pkg/bundle"
 )
@@ -45,20 +47,32 @@ func LogsHandler(b bundle.Bundle, l *slog.Logger) http.HandlerFunc {
 		var podUID string
 		// annotation for the pod logs path is stored in the pod resource[kubernetes.io/config.hash] for etcd/api-server/controller-manager
 		var configHash string
+		var restartCount int32
 		for _, item := range list.Items {
-			if item.GetName() == pod {
-				podUID = string(item.GetUID())
+			if item.GetName() != pod {
+				continue
+			}
 
-				if item.GetAnnotations()["kubernetes.io/config.hash"] != "" {
-					configHash = item.GetAnnotations()["kubernetes.io/config.hash"]
+			var pod v1.Pod
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &pod)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("failed to convert unstructured object to pod: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			podUID = string(pod.GetUID())
+			configHash = pod.GetAnnotations()["kubernetes.io/config.hash"]
+			for _, containerStatus := range pod.Status.ContainerStatuses {
+				if containerStatus.Name == container {
+					restartCount = containerStatus.RestartCount
+					break
 				}
-				break
 			}
 		}
 
-		logFile := "0.log"
-		if previous == "true" {
-			logFile = "1.log"
+		logFile := fmt.Sprintf("%d.log", restartCount)
+		if previous == "true" && restartCount > 0 {
+			logFile = fmt.Sprintf("%d.log", restartCount-1)
 		}
 
 		if podUID != "" {
