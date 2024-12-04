@@ -50,9 +50,10 @@ func LogsHandler(b bundle.Bundle, l *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		var podUID string
+		// PRIO1: logs collected from /var/log/pods 
 		// annotation for the pod logs path is stored in the pod resource[kubernetes.io/config.hash] for etcd/api-server/controller-manager
 		var configHash string
+		var podUID string
 		var restartCount int32
 		for _, item := range list.Items {
 			if item.GetName() != pod {
@@ -88,6 +89,9 @@ func LogsHandler(b bundle.Bundle, l *slog.Logger) http.HandlerFunc {
 		if configHash != "" {
 			candidatePaths = append(candidatePaths, filepath.Join(b.Layout().PodLogs(), fmt.Sprintf("%s_%s_%s", namespace, pod, configHash), container, logFile))
 		}
+
+		// for the logs from k8s/cluster-info/dump/namespace/pod/container.log
+		candidatePaths = append(candidatePaths, filepath.Join(b.Layout().ClusterInfo(), "dump", namespace, pod, container, logFile))
 
 		podLogsPath := ""
 		for _, candidatePath := range candidatePaths {
