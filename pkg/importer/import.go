@@ -126,6 +126,10 @@ func importClusterResources(
 		"groups.json",
 		// namespaces are imported as first resource in a separate step
 		"namespaces.json",
+		// mutatingwebhookconfigurations 
+		"mutatingwebhookconfigurations.yaml",
+		// validatingwebhookconfigurations
+		"validatingwebhookconfigurations.yaml",
 	}
 
 	skipDirs := []string{
