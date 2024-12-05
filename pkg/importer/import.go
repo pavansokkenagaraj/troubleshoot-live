@@ -126,7 +126,7 @@ func importClusterResources(
 		"groups.json",
 		// namespaces are imported as first resource in a separate step
 		"namespaces.json",
-		// mutatingwebhookconfigurations 
+		// mutatingwebhookconfigurations
 		"mutatingwebhookconfigurations.yaml",
 		// validatingwebhookconfigurations
 		"validatingwebhookconfigurations.yaml",
