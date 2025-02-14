@@ -85,9 +85,11 @@ func createEnvtest(ctx context.Context, serverVersion versions.Spec) (*env.Env, 
 
 	logger := logr.FromContextOrDiscard(ctx)
 	return &env.Env{
-		Log:           logger,
-		Version:       serverVersion,
-		Client:        &remote.HTTPClient{},
+		Log:     logger,
+		Version: serverVersion,
+		Client: &remote.HTTPClient{
+			Log: logger.WithName("envtest-client"),
+		},
 		VerifySum:     false, // todo: expose?
 		ForceDownload: false, // todo: expose?
 		NoDownload:    false, // todo: expose?
