@@ -7,7 +7,6 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/spf13/afero"
-	"k8s.io/apimachinery/pkg/version"
 	versions "sigs.k8s.io/controller-runtime/tools/setup-envtest/versions"
 
 	"github.com/mhrabovcin/troubleshoot-live/pkg/bundle"
@@ -38,9 +37,30 @@ import (
 //	minor: "26"
 //	platform: linux/amd64
 type ClusterInfo struct {
-	ServerVersion    version.Info `yaml:"serverVersion"`
-	ClientVersion    version.Info `yaml:"clientVersion"`
-	KustomizeVersion string       `yaml:"kustomizeVersion"`
+	ServerVersion    Info   `yaml:"serverVersion"`
+	ClientVersion    Info   `yaml:"clientVersion"`
+	KustomizeVersion string `yaml:"kustomizeVersion"`
+}
+
+// nicked from k8s.io/apimachinery/pkg/version
+// Info contains versioning information.
+// TODO: Add []string of api versions supported? It's still unclear
+// how we'll want to distribute that information.
+type Info struct {
+	Major        string `json:"major" yaml:"major"`
+	Minor        string `json:"minor" yaml:"minor"`
+	GitVersion   string `json:"gitVersion" yaml:"gitVersion"`
+	GitCommit    string `json:"gitCommit" yaml:"gitCommit"`
+	GitTreeState string `json:"gitTreeState" yaml:"gitTreeState"`
+	BuildDate    string `json:"buildDate" yaml:"buildDate"`
+	GoVersion    string `json:"goVersion" yaml:"goVersion"`
+	Compiler     string `json:"compiler" yaml:"compiler"`
+	Platform     string `json:"platform" yaml:"platform"`
+}
+
+// String returns info as a human-friendly version string.
+func (info Info) String() string {
+	return info.GitVersion
 }
 
 func selectorFromSemver(sv *semver.Version) versions.Selector {
