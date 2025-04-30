@@ -23,7 +23,7 @@ The proxy server allows to define on which address is the API server available. 
 - Download and unpack a release from the Release page.
 
 ```bash
-export VERSION=v0.0.10
+export VERSION=v0.0.20 #Change this to latest version available in releases (https://github.com/mhrabovcin/troubleshoot-live/releases)
 export OS=linux
 export ARCH=amd64
 curl -LS "https://github.com/mhrabovcin/troubleshoot-live/releases/download/${VERSION}/troubleshoot-live_${VERSION}_${OS}_${ARCH}.tar.gz" | tar -zxvf -
