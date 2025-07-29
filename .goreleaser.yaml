@@ -50,8 +50,9 @@ archives:
   - name_template: '{{ .ProjectName }}_v{{trimprefix .Version "v"}}_{{ .Os }}_{{ .Arch }}'
     format_overrides:
       - goos: windows
-        format: zip
-    builds:
+        formats: 
+          - zip
+    ids:
       - cli
     # rlcp: true
 
