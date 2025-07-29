@@ -1,4 +1,4 @@
-GORELEASER_PARALLELISM ?= $(shell nproc --ignore=1)
+GORELEASER_PARALLELISM ?= $(shell if command -v nproc >/dev/null 2>&1; then nproc --ignore=1; else sysctl -n hw.ncpu; fi)
 GORELEASER_DEBUG ?= false
 export DOCKER_REGISTRY ?= ghcr.io
 export DOCKERHUB_ORG ?= mhrabovcin
@@ -46,7 +46,7 @@ release-snapshot:
 	goreleaser  \
 		release \
 		--snapshot \
-		--skip-publish \
+		--skip=publish \
 		--clean \
 		--parallelism=$(GORELEASER_PARALLELISM) \
 		--timeout=60m
