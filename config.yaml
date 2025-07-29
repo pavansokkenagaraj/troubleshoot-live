@@ -1,0 +1,48 @@
+# Layout configuration for troubleshoot-live bundle
+# This file defines the paths where different types of resources are stored in the bundle
+# 
+# Default values (these match the constants in the code):
+# paths:
+#   clusterInfo: "k8s/cluster-info"
+#   clusterResources: "k8s/cluster-resources"
+#   podLogs: "k8s/pod-logs"
+#   previousPodLogs: "k8s/previous-pod-logs"
+#   configMaps: "k8s/cluster-resources/configmaps"
+#   secrets: "k8s/cluster-resources/secrets"
+
+# Paths configuration
+paths:
+  # Example of custom paths (uncomment and modify as needed):
+  clusterInfo: "custom/cluster-info"
+  clusterResources: "custom/resources"
+  podLogs: "custom/logs"
+  previousPodLogs: "custom/previous-logs"
+  configMaps: "custom/resources/configmaps"
+  secrets: "custom/resources/secrets"
+
+# Skip configuration
+skip:
+  # Skip lists for resources and directories
+  resources:
+    # crds are imported during a separate step
+    - "custom-resource-definitions.json"
+    - "pod-disruption-budgets-info.json"
+    # api-resources from the discovery client
+    - "resources.json"
+    # api-groups from the discovery client
+    - "groups.json"
+    # namespaces are imported as first resource in a separate step
+    - "namespaces.json"
+    # mutatingwebhookconfigurations TODO: fix this
+    - "mutatingwebhookconfigurations.yaml"
+    # validatingwebhookconfigurations TODO: fix this
+    - "validatingwebhookconfigurations.yaml"
+    # Add custom skip resources here:
+    # - "my-custom-resource.json"
+
+  dirs:
+    - "apiservices"
+    - "auth-cani-list"
+    - "pod-disruption-budgets"
+    # Add custom skip directories here:
+    # - "my-custom-dir" 

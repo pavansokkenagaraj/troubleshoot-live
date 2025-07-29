@@ -25,10 +25,11 @@ type Bundle interface {
 
 type bundle struct {
 	afero.Fs
+	layout Layout
 }
 
-func (bundle) Layout() Layout {
-	return defaultLayout{}
+func (b bundle) Layout() Layout {
+	return b.layout
 }
 
 // New creates bundle representation from given path. It supports reading extracted
@@ -79,7 +80,13 @@ func New(path string) (Bundle, error) {
 			return nil, fmt.Errorf("more than 1 directory in archive, cannot infer bundle directory")
 		}
 
-		return FromFs(fromDir(filepath.Join(tmpDir, entries[0].Name()))), nil
+		bundleDir := filepath.Join(tmpDir, entries[0].Name())
+		layout, err := LoadLayoutWithFallback(bundleDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load layout config: %w", err)
+		}
+
+		return bundle{Fs: fromDir(bundleDir), layout: layout}, nil
 	default:
 		absPath, err := filepath.Abs(path)
 		if err != nil {
@@ -95,7 +102,12 @@ func New(path string) (Bundle, error) {
 			break
 		}
 
-		return FromFs(fromDir(absPath)), nil
+		layout, err := LoadLayoutWithFallback(absPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load layout config: %w", err)
+		}
+
+		return bundle{Fs: fromDir(absPath), layout: layout}, nil
 	}
 
 	return nil, ErrUnknownBundleFormat
@@ -103,7 +115,7 @@ func New(path string) (Bundle, error) {
 
 // FromFs allows to create bundle form provided afero.Fs.
 func FromFs(fs afero.Fs) Bundle {
-	return bundle{fs}
+	return bundle{Fs: fs, layout: defaultLayout{}}
 }
 
 func unarchiveToDirectory(ctx context.Context, archive, destDir string) error {

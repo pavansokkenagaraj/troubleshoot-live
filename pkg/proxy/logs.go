@@ -28,15 +28,6 @@ func LogsHandler(b bundle.Bundle, l *slog.Logger) http.HandlerFunc {
 		container := r.URL.Query().Get("container")
 		previous := r.URL.Query().Get("previous")
 
-		// Search for pod logs path in the bundle which could be collected either by the
-		// pod logs collector or by the cluster resources collector, which collects pod logs
-		// for failing pods.
-		filename := fmt.Sprintf("%s-%s.log", pod, container)
-		candidatePaths := []string{
-			filepath.Join(b.Layout().PodLogs(), namespace, filename),
-			filepath.Join(b.Layout().ClusterResources(), "pods/logs", namespace, pod, container+".log"),
-		}
-
 		podFilePath := filepath.Join(b.Layout().ClusterResources(), "pods", namespace+".yaml")
 		list, err := bundle.LoadResourcesFromFile(b, podFilePath)
 		if err != nil {
@@ -71,35 +62,57 @@ func LogsHandler(b bundle.Bundle, l *slog.Logger) http.HandlerFunc {
 			}
 		}
 
-		logFile := fmt.Sprintf("%d.log", restartCount)
-		if previous == "true" && restartCount > 0 {
-			logFile = fmt.Sprintf("%d.log", restartCount-1)
+		// Search for pod logs path in the bundle which could be collected either by the
+		// pod logs collector or by the cluster resources collector, which collects pod logs
+		// for failing pods. (troubleshoot.sh specific)
+		filename := fmt.Sprintf("%s-%s.log", pod, container)
+		candidatePaths := []string{
+			filepath.Join(b.Layout().PodLogs(), namespace, filename),
+			filepath.Join(b.Layout().ClusterResources(), "pods/logs", namespace, pod, container+".log"),
 		}
 
-		if podUID != "" {
-			candidatePaths = append(candidatePaths, filepath.Join(b.Layout().PodLogs(), fmt.Sprintf("%s_%s_%s", namespace, pod, podUID), container, logFile))
-		}
+		if previous != "true" {
+			// log files to search for
+			// 1. k8s/cluster-info/dump/namespace/podName/logs.txt (from the k8s cluster-info dump)
+			// 2. k8s/pod-logs/namespace_podName_podUID/container/restartCount.log (/var/log/pods)
+			// 3. k8s/pod-logs/namespace_podName_podUID/container/configHash.log (/var/log/pods)
 
-		if configHash != "" {
-			candidatePaths = append(candidatePaths, filepath.Join(b.Layout().PodLogs(), fmt.Sprintf("%s_%s_%s", namespace, pod, configHash), container, logFile))
+			candidatePaths = append(candidatePaths,
+				filepath.Join(b.Layout().ClusterInfo(), "dump", namespace, pod, "logs.txt"),
+				filepath.Join(b.Layout().PodLogs(), fmt.Sprintf("%s_%s_%s", namespace, pod, podUID), container, fmt.Sprintf("%d.log", restartCount)),
+				filepath.Join(b.Layout().PodLogs(), fmt.Sprintf("%s_%s_%s", namespace, pod, podUID), container, fmt.Sprintf("%s.log", configHash)),
+			)
+		} else {
+			// log files to search for
+			// 1. k8s/pod-logs/namespace_podName_podUID/container/restartCount-1.log (/var/log/pods)
+			// 2. k8s/previous-pod-logs/namespace/pod_name/previous.log
+			if restartCount > 1 {
+				candidatePaths = append(candidatePaths,
+					filepath.Join(b.Layout().PodLogs(), fmt.Sprintf("%s_%s_%s", namespace, pod, podUID), container, fmt.Sprintf("%d.log", restartCount-1)),
+				)
+			}
+			candidatePaths = append(candidatePaths,
+				filepath.Join(b.Layout().PreviousPodLogs(), namespace, pod, "previous.log"),
+			)
 		}
-
-		// for the logs from k8s/cluster-info/dump/namespace/pod/container.log
-		candidatePaths = append(candidatePaths, filepath.Join(b.Layout().ClusterInfo(), "dump", namespace, pod, container, logFile))
 
 		podLogsPath := ""
 		for _, candidatePath := range candidatePaths {
 			if exists, _ := afero.Exists(b, candidatePath); exists {
 				podLogsPath = candidatePath
 				break
+			} else {
+				l.Debug("pod logs not found in the bundle", "path", candidatePath)
 			}
 		}
 
 		if podLogsPath == "" {
+			l.Debug("pod logs not found in the bundle", "paths", candidatePaths)
 			http.Error(w, "pod logs not found in the bundle", http.StatusInternalServerError)
 			return
 		}
 
+		l.Debug("pod logs path", "path", podLogsPath)
 		data, err := afero.ReadFile(b, podLogsPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
